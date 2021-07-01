@@ -1,0 +1,2 @@
+model_checkpoint_path: "/content/dnn_model/EyeDet.model"
+all_model_checkpoint_paths: "/content/dnn_model/EyeDet.model"

@@ -11,3 +11,4 @@ def makeFile(d, file_path) :
     with open(file_path, "w") as file :
         for key in d:
             file.write("%s=%s\n" % (key,d[key]))
+        return

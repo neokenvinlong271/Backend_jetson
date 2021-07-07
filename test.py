@@ -67,13 +67,14 @@ def face_detect():
     #init login
     is_login = False
     try:
-        response = restful.login('datpro7703@gmail.com','datpro7703@gmail.com')
-        json_data = json.loads(response.content)
-        bearer_token = json_data['data']['type'] + ' ' + json_data['data']['token']
-        if len(bearer_token) > 50 and len(json_data['data']['userId']) > 0:
-            USER_ID = json_data['data']['userId']
-            is_login = True
-            restful.upload_data_tracking(bearer_token)
+        response = restful.login(USERNAME,USERNAME)
+        if response.status_code == 201:
+            json_data = json.loads(response.content)
+            bearer_token = json_data['data']['type'] + ' ' + json_data['data']['token']
+            if len(bearer_token) > 50 and len(json_data['data']['userId']) > 0:
+                USER_ID = json_data['data']['userId']
+                is_login = True
+                restful.upload_data_tracking(bearer_token, USER_ID)
     except Exception as e: # work on python 3.x
         pass
 
@@ -97,14 +98,63 @@ def face_detect():
                 counter = 0
                 for code in decode(img):
                     counter = -1
-                    command = (code.data.decode('utf-8')).split('=')[1]
+                    command = (code.data.decode('utf-8')).split('_')[0]
+                    print(command)
 
-            if command == 'deactivated':
+            if command == 'deactivate':
                 if counter == -1:
                     sound = mixer.Sound('sound/deactivated.mp3')
                     sound.play()
                     while mixer.get_busy():
                         pass
+            elif command == 'connect':
+                USER_ID = (code.data.decode('utf-8')).split('_')[1]
+                USERNAME = (code.data.decode('utf-8')).split('_')[2]
+
+                try:
+                    response = restful.login(USERNAME,USERNAME)
+                    if response.status_code == 201:
+                        json_data = json.loads(response.content)
+                        bearer_token = json_data['data']['type'] + ' ' + json_data['data']['token']
+                    if len(bearer_token) > 50 and len(json_data['data']['userId']) > 0:
+                        USER_ID = json_data['data']['userId']
+                        is_login = True
+                        cookies['username'] = USERNAME
+                        cookies['userid'] = USER_ID
+                        fe.makeFile(cookies, 'tmp/cookies.txt')
+
+                        response = restful.connect_user_in_device(USER_ID, DEVICE_ID, bearer_token)
+
+                        if response.status_code == 201:
+                            is_login = True
+                            sound = mixer.Sound('sound/login.mp3')
+                            sound.play()
+                            while mixer.get_busy():
+                                pass
+                        else:
+                            sound = mixer.Sound('sound/login_failed.mp3')
+                            sound.play()
+                            while mixer.get_busy():
+                                pass
+                except Exception as e: # work on python 3.x
+                    sound = mixer.Sound('sound/login_failed.mp3')
+                    sound.play()
+                    while mixer.get_busy():
+                        pass
+                command = 'activate'
+            elif command == 'upload':
+                if is_login:
+                    restful.upload_data_tracking(bearer_token, USER_ID)
+                    sound = mixer.Sound('sound/complete.mp3')
+                    sound.play()
+                    while mixer.get_busy():
+                        pass
+                else:
+                    sound = mixer.Sound('sound/login_first.mp3')
+                    sound.play()
+                    while mixer.get_busy():
+                        pass
+                command = 'activate'
             elif command == 'activate':
                 if counter == -1:
                     sound = mixer.Sound('sound/activated.mp3')
@@ -121,7 +171,7 @@ def face_detect():
                     x -= 20
                     y -= 20
                     w += 40
-                    cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 1)
+                    #cv2.rectangle(img, (x, y), (x + w, y + h), (255, 0, 0), 1)
 
                     roi_gray = gray[y: y + h, x: x + w]
                     roi_color = img[y: y + h, x: x + w]
@@ -191,8 +241,11 @@ def face_detect():
                     if mixer.get_busy():
                         sound.stop()
             
-                if count < 2: cv2.putText(img, 'warning:' + str(count) + ' ,Time: ' + str(round(time.time() - times_drowsiness_start)) + ', Count_eye: ' + str(count_eye), (100, height - 20), font, 1, (0, 255, 0), 1,cv2.LINE_AA)
-                else: cv2.putText(img, 'warning:' + str(count) + ' ,Time: ' + str(round(time.time() - times_drowsiness_start)) + ', Count_eye: ' + str(count_eye), (100, height - 20), font, 1, (0, 0, 255), 1,cv2.LINE_AA)
+                if count_eye == 0:
+                    cv2.putText(img, 'No face detected!!', (100, height - 20), font, 1, (0, 0, 255), 1,cv2.LINE_AA)
+                else:
+                    if count < 2: cv2.putText(img, 'closed eyes:' + str(count) + ' , Closed time: ' + str(round((time.time() - times_drowsiness_start), 2)), (100, height - 20), font, 1, (0, 255, 0), 1,cv2.LINE_AA)
+                    else: cv2.putText(img, 'closed eyes:' + str(count) + ' ,Closed time: ' + str(round((time.time() - times_drowsiness_start), 2)), (100, height - 20), font, 1, (0, 0, 255), 1,cv2.LINE_AA)
 
             cv2.imshow("Drowsiness driver Capstone 2021", img)
             key_code = cv2.waitKey(5) & 0xFF

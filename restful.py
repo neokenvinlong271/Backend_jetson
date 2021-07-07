@@ -50,7 +50,7 @@ def create_tracking_with_image(time, user_id, device_id, image_path, bearer_toke
     response = requests.post(api_url, data=json_data , files=files, headers=headers)
     return response
 
-def upload_data_tracking(bearer_token):
+def upload_data_tracking(bearer_token, userID):
     try:
         dir_path = 'tmp//detected//'
         files = os.listdir(dir_path)
@@ -65,6 +65,9 @@ def upload_data_tracking(bearer_token):
                 device_id = f_name[1]
                 user_id = f_name[2]
 
+                if user_id == "no":
+                    user_id = userID
+
                 create_tracking_with_image(time, user_id, device_id, f.name, bearer_token)
                 #response = create_tracking_with_image(time, user_id, device_id, f.name, bearer_token)
                 #print(response.content)
@@ -75,17 +78,17 @@ def upload_data_tracking(bearer_token):
     except:
         pass
 
-if __name__ == "__main__":
-    DEVICE_ID = 'e83b4b73-6ba1-414e-b7ec-60f5ce7253ec'
-    response = login('datpro7703@gmail.com','datpro7703@gmail.com')
+# if __name__ == "__main__":
+#     DEVICE_ID = 'e83b4b73-6ba1-414e-b7ec-60f5ce7253ec'
+#     response = login('datpro7703@gmail.com','datpro7703@gmail.com')
 
-    json_data = json.loads(response.content)
-    bearer_token = json_data['data']['type'] + ' ' + json_data['data']['token']
-    user_id = json_data['data']['userId']
+#     json_data = json.loads(response.content)
+#     bearer_token = json_data['data']['type'] + ' ' + json_data['data']['token']
+#     user_id = json_data['data']['userId']
 
-    #response = connect_user_in_device(user_id, DEVICE_ID, bearer_token)
-    #response = create_tracking_with_image(1625115802344, user_id, DEVICE_ID, r'C:\Users\DAT\Desktop\Capstone\Eye Dataset\Test_Data2\display.png', bearer_token)
-    upload_data_tracking(bearer_token)
+#     #response = connect_user_in_device(user_id, DEVICE_ID, bearer_token)
+#     #response = create_tracking_with_image(1625115802344, user_id, DEVICE_ID, r'C:\Users\DAT\Desktop\Capstone\Eye Dataset\Test_Data2\display.png', bearer_token)
+#     upload_data_tracking(bearer_token)
 
 #response.status_code
 #response.content
